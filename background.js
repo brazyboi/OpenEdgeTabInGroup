@@ -1,15 +1,17 @@
-chrome.tabs.onCreated.addListener(async (newTab) => {
-  // Find the currently active tab in the window
-  const [activeTab] = await chrome.tabs.query({
-    active: true, 
-    lastFocusedWindow: true
-  });
+let lastGroupId = -1;
 
-  // If the active tab is in a group (groupId !== -1), move the new tab into it
-  if (activeTab && activeTab.groupId !== -1) {
-    chrome.tabs.group({
-      groupId: activeTab.groupId,
-      tabIds: [newTab.id]
-    });
-  }
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    lastGroupId = tab.groupId;
+});
+
+chrome.tabs.onCreated.addListener(async (newTab) => {
+
+    // If the last active tab is in a group, move the new tab into it
+    if (lastGroupId !== -1) {
+        chrome.tabs.group({
+        groupId: lastGroupId,
+        tabIds: [newTab.id]
+        });
+    }
 });
