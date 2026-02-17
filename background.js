@@ -22,4 +22,27 @@ chrome.tabs.onCreated.addListener(async (newTab) => {
             });
         }, 50)
     }
+
 });
+
+// deal with enabled/disabled status
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({ enabled: true });
+  updateIcon(true);
+});
+
+chrome.action.onClicked.addListener(async () => {
+  const { enabled } = await chrome.storage.local.get('enabled');
+  const newState = !enabled;
+  await chrome.storage.local.set({ enabled: newState });
+  updateIcon(newState);
+});
+
+function updateIcon(enabled) {
+  const text = enabled ? "ON" : "OFF";
+  const color = enabled ? "#99c0ff" : "#666153";
+  chrome.action.setTitle({ title: `This extension is ${text}` });
+  chrome.action.setBadgeText({ text: text });
+  chrome.action.setBadgeBackgroundColor({ color: color });
+}

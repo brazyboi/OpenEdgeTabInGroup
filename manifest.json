@@ -1,9 +1,12 @@
 {
     "manifest_version": 3,
-    "name": "Open Tab In Group",
+    "name": "Open Edge Tab In Group",
     "version": "1.0",
     "description": "Automatically adds new tabs to the current active group.",
-    "permissions": ["tabs", "tabGroups"],
+    "permissions": ["tabs", "tabGroups", "storage"],
+    "action": {
+        "default_title": "Open Edge Tab In Group"
+    },
     "background": {
         "service_worker": "background.js"
     }
