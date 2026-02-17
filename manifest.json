@@ -1,0 +1,10 @@
+{
+    "manifest_version": 3,
+    "name": "Open Tab In Group",
+    "version": "1.0",
+    "description": "Automatically adds new tabs to the current active group.",
+    "permissions": ["tabs", "tabGroups"],
+    "background": {
+        "service_worker": "background.js"
+    }
+}
