@@ -6,12 +6,20 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 chrome.tabs.onCreated.addListener(async (newTab) => {
-
+    if (lastGroupId === -1) return;
     // If the last active tab is in a group, move the new tab into it
-    if (lastGroupId !== -1) {
+    // try instantly, but if lag, then delay it
+    try {
         chrome.tabs.group({
-        groupId: lastGroupId,
-        tabIds: [newTab.id]
+            groupId: lastGroupId,
+            tabIds: [newTab.id]
         });
+    } catch (e) {
+        setTimeout(() => {
+            chrome.tabs.group({
+                groupId: lastGroupId,
+                tabIds: [newTab.id]
+            });
+        }, 50)
     }
 });
