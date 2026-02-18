@@ -1,25 +1,41 @@
+let lastStableGroupId = -1;
+let lastStableWindowId = -1;
 const ungrouped = new Set();
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+
+    if (tab.groupId !== -1) {
+      lastStableGroupId = tab.groupId;
+      lastStableWindowId = tab.windowId;
+    } else {
+      // add a delay before overwriting
+      setTimeout(async () => {
+        const currentTab = await chrome.tabs.get(activeInfo.tabId).catch(() => null);
+        if (currentTab && currentTab.active && currentTab.groupId === -1) {
+          lastStableGroupId = -1;
+          lastStableWindowId = currentTab.windowId;
+        }
+      }, 300);
+    }
+  } catch (e) {}
+});
 
 chrome.tabs.onCreated.addListener(async (newTab) => {
   const { enabled } = await chrome.storage.local.get('enabled');
-  if (enabled === false) return;
-  
-  if (ungrouped.has(newTab.id)) {
-    ungrouped.delete(newTab.id); 
+
+  if (enabled === false || ungrouped.has(newTab.id) || lastStableGroupId === -1) {
+    ungrouped.delete(newTab.id);
     return;
   }
-  
-  setTimeout(async () => {
-    const allTabs = await chrome.tabs.query({ windowId: newTab.windowId });
-    const neighborTab = allTabs.find(t => t.index === newTab.index - 1);
-    
-    if (neighborTab && neighborTab.groupId !== -1) {
-      chrome.tabs.group({
-        groupId: neighborTab.groupId,
-        tabIds: [newTab.id]
-      }).catch(() => {});
-    }
-  }, 50);
+
+  if (newTab.windowId === lastStableWindowId) {
+    chrome.tabs.group({
+      groupId: lastStableGroupId,
+      tabIds: [newTab.id]
+    }).catch(() => {});
+  }
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
