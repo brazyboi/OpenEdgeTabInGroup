@@ -1,48 +1,39 @@
 let lastGroupId = -1;
+let lastWindowId = -1;
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    const tab = await chrome.tabs.get(activeInfo.tabId);
-    lastGroupId = tab.groupId;
+  const tab = await chrome.tabs.get(activeInfo.tabId);
+  lastGroupId = tab.groupId;
+  lastWindowId = tab.windowId;
 });
 
 chrome.tabs.onCreated.addListener(async (newTab) => {
-    if (lastGroupId === -1) return;
-    // If the last active tab is in a group, move the new tab into it
-    // try instantly, but if lag, then delay it
-    try {
-        chrome.tabs.group({
-            groupId: lastGroupId,
-            tabIds: [newTab.id]
-        });
-    } catch (e) {
-        setTimeout(() => {
-            chrome.tabs.group({
-                groupId: lastGroupId,
-                tabIds: [newTab.id]
-            });
-        }, 50)
-    }
-
-});
-
-// deal with enabled/disabled status
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ enabled: true });
-  updateIcon(true);
-});
-
-chrome.action.onClicked.addListener(async () => {
   const { enabled } = await chrome.storage.local.get('enabled');
-  const newState = !enabled;
-  await chrome.storage.local.set({ enabled: newState });
-  updateIcon(newState);
+  
+  // EXIT IF: 
+  // - Extension is off
+  // - We weren't in a group
+  // - The new tab is in a diff window
+  if (!enabled || lastGroupId === -1 || newTab.windowId !== lastWindowId) {
+    return;
+  }
+
+  try {
+    await chrome.tabs.group({
+      groupId: lastGroupId,
+      tabIds: [newTab.id]
+    });
+  } catch (e) {
+    setTimeout(() => {
+      chrome.tabs.group({ groupId: lastGroupId, tabIds: [newTab.id] }).catch(() => {});
+    }, 100);
+  }
 });
 
-function updateIcon(enabled) {
-  const text = enabled ? "ON" : "OFF";
-  const color = enabled ? "#99c0ff" : "#666153";
-  chrome.action.setTitle({ title: `This extension is ${text}` });
-  chrome.action.setBadgeText({ text: text });
-  chrome.action.setBadgeBackgroundColor({ color: color });
-}
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "open-ungrouped-tab") {
+    chrome.tabs.create({ 
+      active: true 
+    });
+  }
+});

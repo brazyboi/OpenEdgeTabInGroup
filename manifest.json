@@ -9,5 +9,13 @@
     },
     "background": {
         "service_worker": "background.js"
+    },
+    "commands": {
+        "open-ungrouped-tab": {
+            "suggested_key": {
+                "default": "Alt+T"
+            },
+            "description": "Open a new tab outside of any group"
+        }
     }
 }
